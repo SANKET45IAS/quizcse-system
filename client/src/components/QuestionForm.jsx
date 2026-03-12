@@ -1,22 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { SUBJECTS } from "../constants/subjects";
 import api, { getApiErrorMessage, getImageUrl } from "../services/api";
-
-const SUBJECTS = [
-  "General Aptitude",
-  "Engineering Mathematics",
-  "Discrete Mathematics",
-  "Digital Logic",
-  "Computer Organization and Architecture",
-  "Programming and Data Structures",
-  "Algorithms",
-  "Theory of Computation",
-  "Compiler Design",
-  "Operating Systems",
-  "Databases (DBMS)",
-  "Computer Networks",
-];
 
 const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard"];
 
