@@ -1,8 +1,10 @@
 import axios from "axios";
 
+const DEPLOYED_FALLBACK_API_URL = "https://quizcse-system.onrender.com/api";
+
 const getDefaultApiUrl = () => {
   if (typeof window === "undefined") {
-    return "http://localhost:5000/api";
+    return DEPLOYED_FALLBACK_API_URL;
   }
 
   const { hostname, origin } = window.location;
@@ -11,7 +13,11 @@ const getDefaultApiUrl = () => {
     return "http://localhost:5000/api";
   }
 
-  return `${origin}/api`;
+  if (hostname.endsWith("onrender.com")) {
+    return `${origin}/api`;
+  }
+
+  return DEPLOYED_FALLBACK_API_URL;
 };
 
 const API_URL = import.meta.env.VITE_API_URL || getDefaultApiUrl();
@@ -35,6 +41,9 @@ export const getImageUrl = (assetPath) => {
 };
 
 export const getApiErrorMessage = (error) =>
-  error.response?.data?.message || "Something went wrong. Please try again.";
+  error.response?.data?.message ||
+  error.response?.statusText ||
+  error.message ||
+  "Something went wrong. Please try again.";
 
 export default api;
