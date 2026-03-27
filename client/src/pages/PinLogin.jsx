@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const ADMIN_PIN = "9465";
+const ADMIN_PIN = "1316";
 
 function PinLogin() {
   const navigate = useNavigate();

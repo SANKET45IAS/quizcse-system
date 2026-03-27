@@ -86,5 +86,15 @@ const questionSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Question", questionSchema);
+const createQuestionModel = (modelName, collectionName) => {
+  if (mongoose.models[modelName]) {
+    return mongoose.models[modelName];
+  }
 
+  return mongoose.model(modelName, questionSchema, collectionName);
+};
+
+module.exports = {
+  createQuestionModel,
+  questionSchema,
+};

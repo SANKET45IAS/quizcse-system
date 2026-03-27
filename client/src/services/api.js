@@ -1,6 +1,20 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://quizcse-system.onrender.com/api";
+const getDefaultApiUrl = () => {
+  if (typeof window === "undefined") {
+    return "http://localhost:5000/api";
+  }
+
+  const { hostname, origin } = window.location;
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    return "http://localhost:5000/api";
+  }
+
+  return `${origin}/api`;
+};
+
+const API_URL = import.meta.env.VITE_API_URL || getDefaultApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
@@ -24,4 +38,3 @@ export const getApiErrorMessage = (error) =>
   error.response?.data?.message || "Something went wrong. Please try again.";
 
 export default api;
-

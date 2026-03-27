@@ -1,20 +1,30 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import QuestionForm from "../components/QuestionForm";
 import api, { getApiErrorMessage } from "../services/api";
+import { rememberSubject } from "../utils/subjectPreference";
 
 function EditQuestion() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const topic = searchParams.get("topic") || "";
   const [question, setQuestion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchQuestion = async () => {
+      setLoading(true);
+      setError("");
+
       try {
-        const response = await api.get(`/questions/${id}`);
+        const response = await api.get(`/questions/${id}`, {
+          params: topic ? { topic } : undefined,
+        });
+
+        rememberSubject(response.data.topic);
         setQuestion(response.data);
       } catch (requestError) {
         setError(getApiErrorMessage(requestError));
@@ -24,7 +34,7 @@ function EditQuestion() {
     };
 
     fetchQuestion();
-  }, [id]);
+  }, [id, topic]);
 
   if (loading) {
     return (
@@ -49,8 +59,7 @@ function EditQuestion() {
     );
   }
 
-  return <QuestionForm mode="edit" initialData={question} />;
+  return <QuestionForm key={`${question?._id}-${question?.topic}`} mode="edit" initialData={question} />;
 }
 
 export default EditQuestion;
-

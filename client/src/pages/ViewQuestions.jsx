@@ -3,45 +3,56 @@ import { Link, useNavigate } from "react-router-dom";
 
 import { SUBJECTS } from "../constants/subjects";
 import api, { getApiErrorMessage } from "../services/api";
+import { getRememberedSubject, rememberSubject } from "../utils/subjectPreference";
+
+const normalizeTopicKey = (topic) =>
+  String(topic || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 
 function ViewQuestions() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedTopic, setSelectedTopic] = useState(SUBJECTS[0]);
+  const [selectedTopic, setSelectedTopic] = useState(getRememberedSubject);
 
   useEffect(() => {
+    let isCurrentRequest = true;
+
     const fetchQuestions = async () => {
+      setLoading(true);
+      setError("");
+
       try {
-        const response = await api.get("/questions");
-        setQuestions(response.data);
+        const response = await api.get("/questions", {
+          params: { topic: selectedTopic },
+        });
+
+        if (isCurrentRequest) {
+          setQuestions(response.data);
+        }
       } catch (requestError) {
-        setError(getApiErrorMessage(requestError));
+        if (isCurrentRequest) {
+          setQuestions([]);
+          setError(getApiErrorMessage(requestError));
+        }
       } finally {
-        setLoading(false);
+        if (isCurrentRequest) {
+          setLoading(false);
+        }
       }
     };
 
+    rememberSubject(selectedTopic);
     fetchQuestions();
-  }, []);
 
-  useEffect(() => {
-    if (!questions.length) {
-      setSelectedTopic(SUBJECTS[0]);
-      return;
-    }
-
-    const availableTopics = new Set(questions.map((question) => question.topic));
-
-    setSelectedTopic((currentTopic) => {
-      if (currentTopic && availableTopics.has(currentTopic)) {
-        return currentTopic;
-      }
-
-      return SUBJECTS.find((topic) => availableTopics.has(topic)) || SUBJECTS[0];
-    });
-  }, [questions]);
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [selectedTopic]);
 
   const handleDelete = async (id) => {
     const confirmed = window.confirm("Delete this question and its uploaded images?");
@@ -51,14 +62,18 @@ function ViewQuestions() {
     }
 
     try {
-      await api.delete(`/questions/${id}`);
+      await api.delete(`/questions/${id}`, {
+        params: { topic: selectedTopic },
+      });
       setQuestions((current) => current.filter((question) => question._id !== id));
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     }
   };
 
-  const filteredQuestions = questions.filter((question) => question.topic === selectedTopic);
+  const visibleQuestions = questions.filter(
+    (question) => normalizeTopicKey(question.topic) === normalizeTopicKey(selectedTopic)
+  );
 
   return (
     <div className="page-shell">
@@ -99,21 +114,16 @@ function ViewQuestions() {
 
           <div className="topic-summary">
             <h2>{selectedTopic}</h2>
-            <p>{`${filteredQuestions.length} question${filteredQuestions.length === 1 ? "" : "s"} in this topic`}</p>
+            <p>{`${visibleQuestions.length} question${visibleQuestions.length === 1 ? "" : "s"} in this topic`}</p>
           </div>
         </div>
 
         {loading ? (
           <p className="message">Loading questions...</p>
-        ) : questions.length === 0 ? (
-          <div className="empty-state">
-            <h2>No questions available</h2>
-            <p>Start by adding your first question to the quiz bank.</p>
-          </div>
-        ) : filteredQuestions.length === 0 ? (
+        ) : visibleQuestions.length === 0 ? (
           <div className="empty-state">
             <h2>No questions for this topic</h2>
-            <p>Select another topic or add a new question in {selectedTopic}.</p>
+            <p>{`No questions are saved in ${selectedTopic} yet.`}</p>
           </div>
         ) : (
           <div className="table-wrapper">
@@ -127,7 +137,7 @@ function ViewQuestions() {
                 </tr>
               </thead>
               <tbody>
-                {filteredQuestions.map((question) => (
+                {visibleQuestions.map((question) => (
                   <tr key={question._id}>
                     <td>
                       {question.question.length > 90
@@ -138,7 +148,10 @@ function ViewQuestions() {
                       <span className="tag">{question.type}</span>
                     </td>
                     <td>
-                      <Link className="table-link" to={`/edit-question/${question._id}`}>
+                      <Link
+                        className="table-link"
+                        to={`/edit-question/${question._id}?topic=${encodeURIComponent(question.topic)}`}
+                      >
                         Edit
                       </Link>
                     </td>
