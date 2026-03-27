@@ -2,6 +2,16 @@ import axios from "axios";
 
 const DEPLOYED_FALLBACK_API_URL = "https://quizcse-system.onrender.com/api";
 
+const normalizeApiUrl = (url) => {
+  const trimmedUrl = String(url || "").trim().replace(/\/+$/, "");
+
+  if (!trimmedUrl) {
+    return "";
+  }
+
+  return trimmedUrl.endsWith("/api") ? trimmedUrl : `${trimmedUrl}/api`;
+};
+
 const getDefaultApiUrl = () => {
   if (typeof window === "undefined") {
     return DEPLOYED_FALLBACK_API_URL;
@@ -20,7 +30,7 @@ const getDefaultApiUrl = () => {
   return DEPLOYED_FALLBACK_API_URL;
 };
 
-const API_URL = import.meta.env.VITE_API_URL || getDefaultApiUrl();
+const API_URL = normalizeApiUrl(import.meta.env.VITE_API_URL) || getDefaultApiUrl();
 
 const api = axios.create({
   baseURL: API_URL,
